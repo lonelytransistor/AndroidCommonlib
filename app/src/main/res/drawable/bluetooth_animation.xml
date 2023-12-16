@@ -1,0 +1,6 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/bluetooth_animation_vector">
+    <target android:name="outerpath" android:animation="@animator/bluetooth_animation_outerpath" />
+    <target android:name="outer" android:animation="@animator/bluetooth_animation_outer" />
+    <target android:name="inner" android:animation="@animator/bluetooth_animation_inner" />
+</animated-vector>

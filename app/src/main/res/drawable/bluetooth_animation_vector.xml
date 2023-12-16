@@ -1,0 +1,41 @@
+<vector android:name="bluetooth_animation_vector"
+    android:width="640dp" android:height="640dp"
+    android:viewportWidth="640" android:viewportHeight="640"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <group
+        android:name="outer"
+        android:pivotX="320"
+        android:pivotY="320"
+        android:scaleX="0.625"
+        android:scaleY="0.625">
+        <path
+            android:name="outerpath"
+            android:pathData="M 320 0 C 235.163 0 153.714 33.737 93.726 93.726 C 33.737 153.714 0 235.163 0 320 C 0 404.837 33.737 486.286 93.726 546.274 C 153.714 606.263 235.163 640 320 640 C 404.837 640 486.286 606.263 546.274 546.274 C 606.263 486.286 640 404.837 640 320 C 640 235.163 606.263 153.714 546.274 93.726 C 486.286 33.737 404.837 0 320 0 Z"
+            android:fillColor="#00aaff"
+            android:fillAlpha="0.2"
+            android:strokeWidth="1"/>
+    </group>
+    <group
+        android:name="inner"
+        android:pivotX="320"
+        android:pivotY="320"
+        android:scaleX="0.88"
+        android:scaleY="0.88">
+        <path
+            android:name="innerpath"
+            android:pathData="M 320 95 C 272.492 95 226.183 110.047 187.748 137.971 C 149.314 165.896 120.693 205.288 106.012 250.471 C 91.332 295.654 91.332 344.346 106.012 389.529 C 120.693 434.712 149.314 474.104 187.748 502.029 C 226.183 529.953 272.492 545 320 545 C 367.508 545 413.817 529.953 452.252 502.029 C 490.686 474.104 519.307 434.712 533.988 389.529 C 548.668 344.346 548.668 295.654 533.988 250.471 C 519.307 205.288 490.686 165.896 452.252 137.971 C 413.817 110.047 367.508 95 320 95 Z"
+            android:fillColor="#00aaff"
+            android:fillAlpha="0.65"
+            android:strokeWidth="1"/>
+    </group>
+    <path
+        android:name="path_2"
+        android:pathData="M 312 192 L 328 192 C 348.149 192 367.493 200.013 381.74 214.26 C 395.987 228.507 404 247.851 404 268 L 404 372 C 404 392.149 395.987 411.493 381.74 425.74 C 367.493 439.987 348.149 448 328 448 L 312 448 C 291.851 448 272.507 439.987 258.26 425.74 C 244.013 411.493 236 392.149 236 372 L 236 268 C 236 247.851 244.013 228.507 258.26 214.26 C 272.507 200.013 291.851 192 312 192"
+        android:fillColor="#ebf8ff"
+        android:strokeWidth="1"/>
+    <path
+        android:name="path_3"
+        android:pathData="M 277 279 L 357 360 L 318 407 L 318 240 L 357 285 L 277 363"
+        android:strokeColor="#0a3d91"
+        android:strokeWidth="14"/>
+</vector>

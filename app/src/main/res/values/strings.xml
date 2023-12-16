@@ -1,0 +1,26 @@
+<resources>
+    <string name="dummy">dummy</string>
+
+    <string name="settings">Settings</string>
+    <string name="general_settings">General settings</string>
+
+    <string name="mute">Mute</string>
+    <string name="unmute">Unmute</string>
+    <string name="restrict">Restrict</string>
+    <string name="unrestrict">Unrestrict</string>
+    <string name="device_options_desc">A restricted device is unable to perform remote actions.\nA muted device is unable to show notifications on the screen.</string>
+
+    <string name="device_name">Device name: %1$s</string>
+    <string name="paired_on">Paired on: %1$s</string>
+    <string name="last_active_on">Last active on: %1$s</string>
+
+    <string name="request_bt">Requesting permissions</string>
+    <string name="enable_bt">Enabling Bluetooth</string>
+    <string name="visible_bt">Making discoverable</string>
+    <string name="find_bt">Searching for a device</string>
+    <string name="wait_bt">Waiting for a device</string>
+    <string name="connect_bt">Connecting</string>
+    <string name="recv_bt">Receiving data</string>
+    <string name="send_bt">Sending data</string>
+    <string name="close_bt">Disconnecting</string>
+</resources>

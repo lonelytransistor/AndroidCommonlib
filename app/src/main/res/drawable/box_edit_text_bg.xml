@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:src="@drawable/box_edit_text_bg_png"
+    android:tileModeY="repeat"
+    android:tileModeX="repeat" />
