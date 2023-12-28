@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="OutlinedTextView">
+        <attr name="stroke" format="float"/>
+        <attr name="strokeColor" format="color"/>
+    </declare-styleable>
+    <declare-styleable name="ProgressDrawableView">
+        <attr name="progress" format="float"/>
+        <attr name="fgColor" format="color"/>
+        <attr name="bgColor" format="color"/>
+    </declare-styleable>
+</resources>

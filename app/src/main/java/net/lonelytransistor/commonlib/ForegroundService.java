@@ -22,34 +22,62 @@ public class ForegroundService extends Service {
             PERSISTENT_NOTIFICATION_ID, "Persistent notification",
             NotificationManager.IMPORTANCE_DEFAULT);
 
+    public static void start(Context context, Intent intent) {
+        String action = intent.getAction();
+        intent.putExtra("REAL_ACTION", action);
+        intent.setAction(INTENT_START);
+        context.getApplicationContext().startService(intent);
+    }
+    public static void stop(Context context, Intent intent) {
+        String action = intent.getAction();
+        intent.putExtra("REAL_ACTION", action);
+        intent.setAction(INTENT_STOP);
+        context.getApplicationContext().startService(intent);
+    }
+    public static void restart(Context context, Intent intent) {
+        String action = intent.getAction();
+        intent.putExtra("REAL_ACTION", action);
+        intent.setAction(INTENT_RESTART);
+        context.getApplicationContext().startService(intent);
+    }
     public static void start(Context context, Class<?> klass) {
-        Utils.signalService(context, INTENT_START, klass);
+        Utils.signalService(context.getApplicationContext(), INTENT_START, klass);
     }
     public static void stop(Context context, Class<?> klass) {
-        Utils.signalService(context, INTENT_STOP, klass);
+        Utils.signalService(context.getApplicationContext(), INTENT_STOP, klass);
     }
     public static void restart(Context context, Class<?> klass) {
-        Utils.signalService(context, INTENT_RESTART, klass);
+        Utils.signalService(context.getApplicationContext(), INTENT_RESTART, klass);
     }
 
+    public void onCommand(Intent intent) {}
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public final int onStartCommand(Intent intent, int flags, int startId) {
+        String realAction = intent.getStringExtra("REAL_ACTION");
         if (intent.getAction().equals(INTENT_START)) {
             createNotification();
             startForeground(SERVICE_ID, notification);
-            return START_STICKY;
         } else if (intent.getAction().equals(INTENT_STOP)) {
             stopForeground(true);
             stopSelf();
-            return START_NOT_STICKY;
         } else if (intent.getAction().equals(INTENT_RESTART)) {
             stopForeground(true);
             stopSelf();
             createNotification();
             startForeground(SERVICE_ID, notification);
-            return START_STICKY;
         }
-        return START_NOT_STICKY;
+        if (realAction != null) {
+            intent.setAction(realAction);
+            onCommand(intent);
+        }
+        switch (intent.getAction()) {
+            case INTENT_START:
+            case INTENT_RESTART:
+                return START_STICKY;
+            case INTENT_STOP:
+            default:
+                return START_NOT_STICKY;
+        }
     }
     private void createNotification() {
         NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);

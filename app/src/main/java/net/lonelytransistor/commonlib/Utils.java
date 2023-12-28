@@ -1,7 +1,6 @@
 package net.lonelytransistor.commonlib;
 
 import android.app.Activity;
-import android.companion.AssociationInfo;
 import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.ComponentName;
@@ -20,14 +19,16 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.content.res.AppCompatResources;
 
 import org.json.JSONException;
@@ -52,8 +53,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
-import android.view.View;
-import android.view.ViewGroup;
 
 public class Utils {
     public static <T> List<T> findViewsByType(View parent, Class<T> type) {
@@ -83,7 +82,26 @@ public class Utils {
         }
         return ret;
     }
-
+    public static class Interval {
+        private Handler handler;
+        private Runnable runnable;
+        public Interval(Runnable r, int i) {
+            handler = new Handler();
+            runnable = new Runnable() {
+                @Override
+                public void run() {
+                    r.run();
+                    handler.postDelayed(this, i);
+                }
+            };
+        }
+        public void start() {
+            handler.postDelayed(runnable, 0);
+        }
+        public void stop() {
+            handler.removeCallbacks(runnable);
+        }
+    }
     static private final DateFormat mDateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM);
 
     public static void signalService(Context context, String action, Class<?> klass) {

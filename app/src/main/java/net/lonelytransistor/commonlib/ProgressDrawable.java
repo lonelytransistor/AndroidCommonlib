@@ -1,14 +1,10 @@
 package net.lonelytransistor.commonlib;
 
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.AnimationDrawable;
-import android.graphics.drawable.Drawable;
-
-import androidx.annotation.Nullable;
 
 public class ProgressDrawable  extends AnimationDrawable {
     private Paint bg;
@@ -41,11 +37,11 @@ public class ProgressDrawable  extends AnimationDrawable {
         fg.setAlpha(alpha);
         bg.setAlpha(alpha);
     }
-    @Override
-    public void setColorFilter(@Nullable ColorFilter colorFilter) {}
-    @Override
-    public void setTint(int tintColor) {
-        fg.setColor(tintColor);
+    public void setFG(int color) {
+        fg.setColor(color);
+    }
+    public void setBG(int color) {
+        bg.setColor(color);
     }
     @Override
     public int getOpacity() {

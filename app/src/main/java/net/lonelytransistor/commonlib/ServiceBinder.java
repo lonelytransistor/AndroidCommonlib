@@ -69,7 +69,8 @@ public class ServiceBinder {
         Intent intent = new Intent(ctx, klass);
         if (action != null)
             intent.setAction(action);
-        ctx.bindService(intent, inst.conn, Context.BIND_AUTO_CREATE);
+        ForegroundService.start(ctx, klass);
+        ctx.bindService(intent, inst.conn, 0);
         binders.get(ctx).add(inst);
     }
     private static void unbind(Context ctx, BinderInstance inst) {

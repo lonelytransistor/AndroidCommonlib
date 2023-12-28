@@ -4,16 +4,21 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import net.lonelytransistor.commonlib.pairing.DeviceData;
-
-import java.util.Arrays;
-import java.util.Date;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InvalidClassException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class Preferences {
+    private static final String TAG = "Preferences";
     private final SharedPreferences sharedPrefs;
     public Preferences(Context ctx, String key) {
         sharedPrefs = ctx.getSharedPreferences(key, Context.MODE_PRIVATE);
@@ -72,23 +77,52 @@ public class Preferences {
         editor.apply();
     }
 
-    public Map<String, String> getMap(String name) {
-        Map<String, String> map = new HashMap<>();
+    private static Serializable strToObj(String s) throws IOException, ClassNotFoundException {
+        byte [] data = Base64.getDecoder().decode(s);
+        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+        Serializable o = (Serializable) ois.readObject();
+        ois.close();
+        return o;
+    }
+    private Map<Serializable, Serializable> getMapSer(String name) throws IOException, ClassNotFoundException {
+        Map<Serializable, Serializable> map = new HashMap<>();
         for (String rawData : getStringSet(name)) {
             String[] data = rawData.split(":", 2);
             if (data[0].matches("^[0-9]+ [0-9]+$")) {
                 String[] dataBndStr = data[0].split(" ");
                 int[] dataBnd = {Integer.parseInt(dataBndStr[0]), Integer.parseInt(dataBndStr[1])};
-                map.put(data[1].substring(0, dataBnd[0]), data[1].substring(dataBnd[0]));
+                try {
+                    map.put(strToObj(data[1].substring(0, dataBnd[0])), strToObj(data[1].substring(dataBnd[0])));
+                } catch (InvalidClassException e) {
+                    Log.i(TAG, "Corrupted library.");
+                    break;
+                }
             }
         }
         return map;
     }
-    public void setMap(String name, Map<String, String> data) {
+    public Map<?, ?> getMap(String name) {
+        try {
+            return getMapSer(name);
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String objToStr(Serializable o) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(o);
+        oos.close();
+        return Base64.getEncoder().encodeToString(baos.toByteArray());
+    }
+    private void setMapSer(String name, Map<Serializable, Serializable> data) throws IOException {
         Set<String> set = new HashSet<>();
-        for (String key : data.keySet()) {
-            String val = data.get(key);
-            if (val != null) {
+        for (Serializable keyS : data.keySet()) {
+            String key = objToStr(keyS);
+            Serializable valS = data.get(keyS);
+            if (valS != null) {
+                String val = objToStr(valS);
                 set.add(key.length() + " " + val.length() + ":" + key + val);
             }
         }
@@ -96,23 +130,55 @@ public class Preferences {
         editor.putStringSet(name, set);
         editor.apply();
     }
+    public void setMap(String name, Map<?,?> data) {
+        if (data.isEmpty()) {
+            SharedPreferences.Editor editor = sharedPrefs.edit();
+            editor.putStringSet(name, new HashSet<>());
+            editor.apply();
+        } else {
+            Object key = data.keySet().toArray()[0];
+            Object value = data.get(key);
+            try {
+                if (key instanceof Serializable && value instanceof Serializable) {
+                    setMapSer(name, (Map<Serializable, Serializable>) data);
+                } else {
+                    throw new ClassCastException("Not serializable.");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
-    public Set<Map<String, String>> getMapSet(String name) {
-        Set<Map<String, String>> ret = new HashSet<>();
+
+    public Set<?> getMapSet(String name) {
+        Set<Map<?, ?>> ret = new HashSet<>();
         for (String subName : getStringSet(name)) {
             ret.add(getMap(subName));
         }
         return ret;
     }
-    public void setMapSet(String name, Set<Map<String, String>> data) {
-        remove(name);
-        Set<String> names = new HashSet<>();
-        for (Map<String,String> map : data) {
-            String subName = name + ":" + names.size();
-            names.add(subName);
-            setMap(subName, map);
+    public void setMapSet(String name, Set<?> data) {
+        if (data.isEmpty()) {
+            SharedPreferences.Editor editor = sharedPrefs.edit();
+            editor.putStringSet(name, new HashSet<>());
+            editor.apply();
+        } else {
+            Object mapObj = data.toArray()[0];
+            if (mapObj instanceof Map<?,?>) {
+                Set<String> names = new HashSet<>();
+                for (Map<Serializable, Serializable> map : (Set<Map<Serializable, Serializable>>) data) {
+                    String subName = name + ":" + names.size();
+                    names.add(subName);
+                    setMap(subName, map);
+                }
+                setStringSet(name, names);
+            } else {
+                SharedPreferences.Editor editor = sharedPrefs.edit();
+                editor.putStringSet(name, new HashSet<>());
+                editor.apply();
+            }
         }
-        setStringSet(name, names);
     }
 
     public void remove(String name) {
