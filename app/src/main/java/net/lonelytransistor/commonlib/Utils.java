@@ -199,6 +199,9 @@ public class Utils {
         return data.substring(0,1).toUpperCase() + data.substring(1);
     }
 
+    public static int FOREGROUND_COLOR = 0;
+    public static int BACKGROUND_COLOR = 0;
+    public static int ACCENT_COLOR = 0;
     public static int drawableToColor(Drawable drawable) {
         Bitmap bitmap = Bitmap.createBitmap(
                 Math.max(1, drawable.getIntrinsicWidth()),
@@ -216,6 +219,24 @@ public class Utils {
                 red << 8*2 |
                 green << 8 |
                 blue;
+    }
+    public static void initialize(Activity ctx) {
+        if (BACKGROUND_COLOR == 0) {
+            TypedValue color = new TypedValue();
+            ctx.getTheme().resolveAttribute(
+                    android.R.attr.colorBackground, color, true);
+            BACKGROUND_COLOR = color.data;
+        }
+        if (ACCENT_COLOR == 0) {
+            TypedValue color = new TypedValue();
+            ctx.getTheme().resolveAttribute(
+                    android.R.attr.colorAccent, color, true);
+            ACCENT_COLOR = color.data;
+        }
+        if (FOREGROUND_COLOR == 0) {
+            ViewGroup colorGetter = (ViewGroup) ctx.getLayoutInflater().inflate(R.layout._color_getter, null);
+            FOREGROUND_COLOR = Utils.drawableToColor(colorGetter.findViewById(R.id.tintSelector).getBackground());
+        }
     }
     public static Drawable getDrawable(Context ctx, int resId) {
         return getDrawable(ctx, resId, 0);

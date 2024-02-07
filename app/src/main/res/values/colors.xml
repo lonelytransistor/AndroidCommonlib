@@ -14,4 +14,6 @@
     <color name="dialog_base">#263238</color>
     <color name="white">#E4E4E4</color>
     <color name="white99">#99FFFFFF</color>
+    <color name="black">#060606</color>
+    <color name="black99">#99000000</color>
 </resources>
