@@ -1,5 +1,7 @@
 package net.lonelytransistor.commonlib.apkselect;
 
+import android.Manifest;
+import android.app.NotificationManager;
 import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.ComponentName;
@@ -7,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -37,44 +40,62 @@ public abstract class SelectorServicedActivity extends SelectorActivity {
         super.onDestroy();
         unbindService(apkStoreConnection);
     }
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    private interface Cb {
+        void cb();
+    }
+    private void requestNotificationAccess(Cb cb) {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager.isNotificationListenerAccessGranted(new ComponentName(this, getStoreService()))) {
+            cb.cb();
+            return;
+        }
+
+        startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+        finish();
+    }
+    private void requestDeviceManagement(Cb cb) {
+        CompanionDeviceManager deviceManager = (CompanionDeviceManager) getSystemService(Context.COMPANION_DEVICE_SERVICE);
+        if (!deviceManager.getAssociations().isEmpty()) {
+            cb.cb();
+            return;
+        }
 
         ActivityResultContracts.StartIntentSenderForResult contract =
                 new ActivityResultContracts.StartIntentSenderForResult();
         ActivityResultLauncher<IntentSenderRequest> launcher =
                 registerForActivityResult(contract, (res) -> {
                     if (res.getResultCode() == RESULT_OK) {
-                        Intent intent = new Intent(SelectorServicedActivity.this, getStoreService());
-                        intent.setAction(StoreService.INTENT_GET_BINDER);
-                        bindService(intent, apkStoreConnection, BIND_AUTO_CREATE);
+                        cb.cb();
                     } else {
                         setResult(-22);
                         finish();
                     }
-                });
+        });
+        AssociationRequest pairingRequest = new AssociationRequest.Builder().setSingleDevice(true).build();
+        deviceManager.associate(pairingRequest, new CompanionDeviceManager.Callback() {
+            @Override
+            public void onDeviceFound(@NonNull IntentSender chooserLauncher) {
+                IntentSenderRequest request = new IntentSenderRequest.Builder(chooserLauncher)
+                        .build();
+                launcher.launch(request);
+            }
+            @Override
+            public void onFailure(CharSequence errorMessage) {
+                setResult(-22);
+                finish();
+            }
+        }, null);
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-        CompanionDeviceManager deviceManager = (CompanionDeviceManager) getSystemService(Context.COMPANION_DEVICE_SERVICE);
-        if (deviceManager.getAssociations().isEmpty()) {
-            AssociationRequest pairingRequest = new AssociationRequest.Builder().setSingleDevice(true).build();
-            deviceManager.associate(pairingRequest, new CompanionDeviceManager.Callback() {
-                @Override
-                public void onDeviceFound(@NonNull IntentSender chooserLauncher) {
-                    IntentSenderRequest request = new IntentSenderRequest.Builder(chooserLauncher)
-                            .build();
-                    launcher.launch(request);
-                }
-                @Override
-                public void onFailure(CharSequence errorMessage) {
-                    setResult(-22);
-                    finish();
-                }
-            }, null);
-        } else {
-            Intent intent = new Intent(SelectorServicedActivity.this, getStoreService());
-            intent.setAction(StoreService.INTENT_GET_BINDER);
-            bindService(intent, apkStoreConnection, BIND_AUTO_CREATE);
-        }
+        requestDeviceManagement(() -> {
+            requestNotificationAccess(() -> {
+                Intent intent = new Intent(SelectorServicedActivity.this, getStoreService());
+                intent.setAction(StoreService.INTENT_GET_BINDER);
+                bindService(intent, apkStoreConnection, BIND_AUTO_CREATE);
+            });
+        });
     }
 }

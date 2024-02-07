@@ -128,7 +128,24 @@ public class SelectorAdapter extends BaseAdapter {
                         false
                 );
     }
+    private void addSeparator(ViewGroup v) {
+        View view = inflate(v, R.layout.apk_selector_listview_element_separator);
+        v.addView(view);
+    }
     private void updateInnerExtras(Store.ApkInfo app, LinearLayout inner) {
+        TextInputLayout regexParent = (TextInputLayout) inflate(inner, R.layout.apk_selector_listview_element_string);
+        regexParent.setHint(R.string.regex);
+        TextInputEditText regexInput = regexParent.findViewById(R.id.input);
+        regexInput.setText(app.notificationRegex);
+        regexInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                app.notificationRegex = ((EditText) v).getText().toString();
+            }
+        });
+        inner.addView(regexParent);
+
+        addSeparator(inner);
+
         Map<String, String> fieldNames = new HashMap<>();
         if (app.extra.containsKey(FIELD_NAMES_EXTRA)) {
             Object fieldNamesObj = app.extra.getSerializable(FIELD_NAMES_EXTRA);
@@ -304,9 +321,8 @@ public class SelectorAdapter extends BaseAdapter {
     }
     private void collapseDetails(Store.ApkInfo app, View elementView) {
         ImageView icon = elementView.findViewById(R.id.appDetailsIcon);
-        View details = elementView.findViewById(R.id.appDetailsLayout);
         LinearLayout inner = elementView.findViewById(R.id.innerLayout);
-        details.setVisibility(View.GONE);
+        inner.setVisibility(View.GONE);
         icon.setImageDrawable(Utils.getDrawable(context, R.drawable.chevron_down, Utils.FOREGROUND_COLOR));
         inner.removeAllViews();
         updateInnerCategoriesHidden(app, elementView);
@@ -315,18 +331,18 @@ public class SelectorAdapter extends BaseAdapter {
     }
     private void expandDetails(Store.ApkInfo app, View elementView) {
         ImageView icon = elementView.findViewById(R.id.appDetailsIcon);
-        View details = elementView.findViewById(R.id.appDetailsLayout);
         LinearLayout inner = elementView.findViewById(R.id.innerLayout);
-        details.setVisibility(View.VISIBLE);
+        inner.setVisibility(View.VISIBLE);
         icon.setImageDrawable(Utils.getDrawable(context, R.drawable.chevron_up, Utils.FOREGROUND_COLOR));
         updateInnerExtras(app, inner);
+        addSeparator(inner);
         updateInnerCategoriesShown(app, elementView);
 
         expandedDetails.put(elementView, app);
     }
     private void toggleDetails(Store.ApkInfo app, View elementView) {
-        View details = elementView.findViewById(R.id.appDetailsLayout);
-        if (details.getVisibility() == View.VISIBLE) {
+        LinearLayout inner = elementView.findViewById(R.id.innerLayout);
+        if (inner.getVisibility() == View.VISIBLE) {
             collapseDetails(app, elementView);
         } else {
             collapseAllDetails();
@@ -348,14 +364,6 @@ public class SelectorAdapter extends BaseAdapter {
         ConstraintLayout appDetailsBtn = elementView.findViewById(R.id.appDetailsButton);
         appDetailsBtn.setOnClickListener((v)-> {
             toggleDetails(app, elementView);
-        });
-
-        EditText regexInput = elementView.findViewById(R.id.regexInput);
-        regexInput.setText(app.notificationRegex);
-        regexInput.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                app.notificationRegex = ((EditText) v).getText().toString();
-            }
         });
 
         updateInnerCategoriesHidden(app, elementView);
