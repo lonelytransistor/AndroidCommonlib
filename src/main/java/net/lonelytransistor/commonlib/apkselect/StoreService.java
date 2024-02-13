@@ -8,22 +8,26 @@ import android.os.IBinder;
 import android.os.Process;
 import android.os.UserHandle;
 import android.service.notification.NotificationListenerService;
-import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import java.util.List;
 import java.util.Set;
 
 public abstract class StoreService extends NotificationListenerService {
-    public StoreService() {}
     private static final String TAG = "StoreService";
+    public StoreService() {}
     public static final String INTENT_GET_BINDER = "INTENT_GET_BINDER";
     public static final String FIELD_NAMES_EXTRA = SelectorAdapter.FIELD_NAMES_EXTRA;
     private UserHandle userHandle;
 
     public class InstanceBinder extends Binder {
+        public void forceGetStore(Store.Callback cb) {
+            apkStore = null;
+            getStore(cb);
+        }
         public void getStore(Store.Callback cb) {
             if (apkStore == null) {
+                Log.i(TAG, "Store empty");
                 apkStore = new Store(StoreService.this, new Store.Callback() {
                     @Override
                     public void onStarted(Store apkStore) {}
@@ -43,29 +47,27 @@ public abstract class StoreService extends NotificationListenerService {
                     public void onFinished(Store apkStore) {}
                 }) {
                     @Override
-                    public String loadRegex(ApkInfo info) {
-                        return StoreService.this.loadRegex(info);
+                    public void load(Callback progressCb) {
+                        StoreService.this.onBeforeLoad();
+                        super.load(progressCb);
+                        StoreService.this.onAfterLoad();
                     }
                     @Override
-                    public Set<String> loadCategories(ApkInfo info) {
-                        return StoreService.this.loadCategories(info);
-                    }
-                    @Override
-                    protected Bundle loadExtraSettings(Store.ApkInfo info) {
-                        return StoreService.this.loadExtraSettings(info);
+                    protected Data load(ApkInfo info) {
+                        return StoreService.this.load(info);
                     }
                     @Override
                     public void save() {
-                        StoreService.this.save();
+                        StoreService.this.onBeforeSave();
                         super.save();
                     }
                     @Override
-                    public void save(ApkInfo info, String notificationRegex, Set<String> monitoredGroups, Bundle extra) {
-                        StoreService.this.save(info, notificationRegex, monitoredGroups, extra);
+                    public void save(ApkInfo info, Data data) {
+                        StoreService.this.save(info, data);
                     }
                     @Override
                     public void save(Set<String> monitoredPackages) {
-                        StoreService.this.save(monitoredPackages);
+                        StoreService.this.onAfterSave(monitoredPackages);
                     }
                     @Override
                     protected List<NotificationChannel> getNotificationChannels(String pkgName) {
@@ -79,6 +81,8 @@ public abstract class StoreService extends NotificationListenerService {
             }
         }
     }
+
+
     @Override
     public IBinder onBind(Intent mIntent) {
         userHandle = Process.myUserHandle();
@@ -92,12 +96,12 @@ public abstract class StoreService extends NotificationListenerService {
 
     private final InstanceBinder binder = new InstanceBinder();
 
-    public abstract String loadRegex(Store.ApkInfo info);
-    public abstract Set<String> loadCategories(Store.ApkInfo info);
-    public abstract Bundle loadExtraSettings(Store.ApkInfo info);
-    public void save() {}
-    public abstract void save(Store.ApkInfo info, String notificationRegex, Set<String> monitoredGroups, Bundle extra);
-    public abstract void save(Set<String> monitoredPackages);
+    protected abstract Store.Data load(Store.ApkInfo info);
+    protected abstract void save(Store.ApkInfo info, Store.Data data);
+    protected void onBeforeLoad() {}
+    protected void onAfterLoad() {}
+    protected void onBeforeSave() {}
+    protected void onAfterSave(Set<String> monitoredPackages) {}
 
     private Store apkStore = null;
     @Override

@@ -24,21 +24,39 @@ public abstract class SelectorServicedActivity extends SelectorActivity {
     @Override
     protected void getStore(Store.Callback cb) {
         mCb = cb;
+        if (binder != null) {
+            binder.forceGetStore(cb);
+        }
     }
+    private StoreService.InstanceBinder binder = null;
     private final ServiceConnection apkStoreConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder ibinder) {
-            StoreService.InstanceBinder binder = ((StoreService.InstanceBinder) ibinder);
+            binder = ((StoreService.InstanceBinder) ibinder);
             binder.getStore(mCb);
         }
         @Override
-        public void onServiceDisconnected(ComponentName name) {}
+        public void onServiceDisconnected(ComponentName name) {
+            binder = null;
+        }
+        @Override
+        public void onBindingDied(ComponentName name) {
+            binder = null;
+            ServiceConnection.super.onBindingDied(name);
+        }
+        @Override
+        public void onNullBinding(ComponentName name) {
+            binder = null;
+            ServiceConnection.super.onNullBinding(name);
+        }
     };
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unbindService(apkStoreConnection);
+        if (binder != null) {
+            unbindService(apkStoreConnection);
+        }
     }
     private interface Cb {
         void cb();

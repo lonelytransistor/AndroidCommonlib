@@ -7,13 +7,14 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
-import android.util.Log;
 import android.widget.Filter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -32,13 +33,15 @@ public abstract class Store extends Filter {
         void onFinished(Store apkStore);
     }
     public static class NotificationGroup {
-        final String name;
-        final String id;
+        public final String name;
+        public final String id;
         boolean monitored;
-        NotificationGroup(String id, String name, boolean monitored) {
+        final Map<String,Serializable> extra;
+        NotificationGroup(String id, String name, boolean monitored, Map<String,Serializable> extra) {
             this.id = id;
             this.name = name;
             this.monitored = monitored;
+            this.extra = extra;
         }
     }
     public class ApkInfo {
@@ -47,27 +50,29 @@ public abstract class Store extends Filter {
         public final String label;
 
         public final List<NotificationGroup> notificationGroups = new ArrayList<>();
-        public String notificationRegex = "";
-        public Bundle extra = new Bundle();
+        public Map<String,Serializable> extra = new HashMap<>();
+        public Map<String,Serializable> catExtra = new HashMap<>();
         ApkInfo(ResolveInfo info) {
             pkgName = info.activityInfo.packageName;
             label = info.activityInfo.loadLabel(packageManager).toString();
             icon = info.activityInfo.loadIcon(packageManager);
         }
 
-        private boolean update(String notificationRegex, Set<String> monitoredChannels, Bundle extras) {
-            this.notificationRegex = notificationRegex;
+        private boolean update(Map<String, Map<String,Serializable>> monitoredChannels, Map<String,Serializable> extras, Map<String,Serializable> catExtras) {
             List<NotificationChannel> allChannels = getNotificationChannels(pkgName);
             notificationGroups.clear();
             if (allChannels != null) {
                 for (NotificationChannel channel : allChannels) {
+                    String id = channel.getId();
                     notificationGroups.add(new NotificationGroup(
                             channel.getId(),
                             channel.getName().toString(),
-                            monitoredChannels.contains(channel.getId())));
+                            monitoredChannels.containsKey(id),
+                            monitoredChannels.getOrDefault(id, new HashMap<>(catExtras))));
                 }
             }
             extra = extras;
+            catExtra = catExtras;
             return notificationGroups.size() > 0;
         }
     }
@@ -86,7 +91,33 @@ public abstract class Store extends Filter {
     private final PackageManager packageManager;
     public Store(Context ctx, Callback progressCb) {
         packageManager = ctx.getPackageManager();
+        load(progressCb);
+    }
+    public static class Data implements Serializable {
+        public final Map<String, Map<String,Serializable>> categories;
+        public final Map<String,Serializable> extra;
+        public Map<String, Serializable> catExtra;
 
+        public Data() {
+            categories = new HashMap<>();
+            extra = new HashMap<>();
+            catExtra = new HashMap<>();
+        }
+        public Data(Map<String, Map<String,Serializable>> categories, Map<String,Serializable> extra, Map<String,Serializable> catExtra) {
+            this.categories = categories;
+            this.extra = extra;
+            this.catExtra = catExtra;
+        }
+        @Override
+        public String toString() {
+            return "Data{" +
+                    "categories=" + categories +
+                    ", extra=" + extra +
+                    ", catExtra=" + catExtra +
+                    '}';
+        }
+    }
+    public void load(Callback progressCb) {
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         List<ResolveInfo> allApps = packageManager.queryIntentActivities(intent, 0);
@@ -96,7 +127,8 @@ public abstract class Store extends Filter {
             for (ResolveInfo info : allApps) {
                 progressCb.onProgress(((float) progress++) / ((float) allApps.size()));
                 ApkInfo app = new ApkInfo(info);
-                if (app.update(loadRegex(app), loadCategories(app), loadExtraSettings(app))) {
+                Data data = load(app);
+                if (app.update(data.categories, data.extra, data.catExtra)) {
                     infos.add(app);
                     names.add(app.pkgName);
                     labels.add(app.label);
@@ -105,25 +137,24 @@ public abstract class Store extends Filter {
             }
         });
     }
-    public abstract String loadRegex(ApkInfo info);
-    public abstract Set<String> loadCategories(ApkInfo info);
-    protected abstract Bundle loadExtraSettings(ApkInfo info);
-    public abstract void save(ApkInfo info, String notificationRegex, Set<String> monitoredGroups, Bundle extra);
+    protected abstract Data load(ApkInfo info);
+    public abstract void save(ApkInfo info, Data data);
     public abstract void save(Set<String> monitoredPackages);
     protected abstract List<NotificationChannel> getNotificationChannels(String pkgName);
 
     public void save() {
         Set<String> pkgNames = new HashSet<>();
-        for (ApkInfo info : infos) {
-            Set<String> monitoredGroups = new HashSet<>();
-            for (NotificationGroup group : info.notificationGroups) {
+        for (ApkInfo app : infos) {
+            Map<String, Map<String,Serializable>> monitoredGroups = new HashMap<>();
+            for (NotificationGroup group : app.notificationGroups) {
                 if (group.monitored) {
-                    monitoredGroups.add(group.id);
+                    monitoredGroups.put(group.id, group.extra);
                 }
             }
             if (!monitoredGroups.isEmpty()) {
-                save(info, info.notificationRegex, monitoredGroups, info.extra);
-                pkgNames.add(info.pkgName);
+                Data data = new Data(monitoredGroups, app.extra, app.catExtra);
+                save(app, data);
+                pkgNames.add(app.pkgName);
             }
         }
         save(pkgNames);

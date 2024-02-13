@@ -33,6 +33,7 @@ public abstract class SelectorActivity extends AppCompatActivity {
     private static ProgressDrawable actionBarBackground;
     private static Drawable backSaveIcon;
     private static Drawable tickSaveIcon;
+    private static Drawable reloadIcon;
     private static Drawable[] invertIcons;
     private static Drawable[] selectIcons;
     private static Drawable[] sortIcons;
@@ -53,6 +54,8 @@ public abstract class SelectorActivity extends AppCompatActivity {
         if (actionBarView == null)
             return;
 
+        ((ImageButton) actionBarView.findViewById(R.id.apps_selector_reload))
+                .setImageDrawable(reloadIcon);
         ((ImageButton) actionBarView.findViewById(R.id.apps_selector_invert))
                 .setImageDrawable(invertIcons[
                         appsAdapter.getCount(true) > appsAdapter.getCount(false) ? 0 : 1]);
@@ -97,6 +100,8 @@ public abstract class SelectorActivity extends AppCompatActivity {
             backSaveIcon = Utils.getDrawable(this, R.drawable.save_back, Utils.FOREGROUND_COLOR);
         if (tickSaveIcon == null)
             tickSaveIcon = Utils.getDrawable(this, R.drawable.save_tick, Utils.FOREGROUND_COLOR);
+        if (reloadIcon == null)
+            reloadIcon = Utils.getDrawable(this, R.drawable.refresh, Utils.FOREGROUND_COLOR);
         if (invertIcons == null)
             invertIcons = new Drawable[]{
                     Utils.getDrawable(this, R.drawable.select_invert_off, Utils.FOREGROUND_COLOR),
@@ -126,9 +131,25 @@ public abstract class SelectorActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void reloadStore() {
+        getStore(new Store.Callback() {
+            @Override
+            public void onStarted(Store apkStore) {
+                executor.execute(() -> setAdapter(apkStore));
+            }
+            @Override
+            public void onProgress(float p) {
+                executor.execute(() -> updateProgress(p));
+            }
+            @Override
+            public void onFinished(Store apkStore) {
+                executor.execute(() -> finishAdapter());
+            }
+        });
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        super.onCreate(null);
         initialize();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
@@ -153,6 +174,10 @@ public abstract class SelectorActivity extends AppCompatActivity {
                             isTaskRoot() ? R.drawable.save_tick : R.drawable.save_back,
                             Utils.FOREGROUND_COLOR));
 
+            actionBarView.findViewById(R.id.apps_selector_reload)
+                    .setOnClickListener((v) -> {
+                        reloadStore();
+                    });
             actionBarView.findViewById(R.id.apps_selector_invert)
                     .setOnClickListener((v) -> {
                         if (appsAdapter == null)
@@ -194,19 +219,6 @@ public abstract class SelectorActivity extends AppCompatActivity {
                         return false;
                     }
                 });
-        getStore(new Store.Callback() {
-            @Override
-            public void onStarted(Store apkStore) {
-                executor.execute(() -> setAdapter(apkStore));
-            }
-            @Override
-            public void onProgress(float p) {
-                executor.execute(() -> updateProgress(p));
-            }
-            @Override
-            public void onFinished(Store apkStore) {
-                executor.execute(() -> finishAdapter());
-            }
-        });
+        reloadStore();
     }
 }

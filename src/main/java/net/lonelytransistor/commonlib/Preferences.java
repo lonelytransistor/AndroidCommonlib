@@ -142,7 +142,7 @@ public class Preferences {
                 if (key instanceof Serializable && value instanceof Serializable) {
                     setMapSer(name, (Map<Serializable, Serializable>) data);
                 } else {
-                    throw new ClassCastException("Not serializable.");
+                    throw new ClassCastException(value.getClass().getName() + " is not serializable.");
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);

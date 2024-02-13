@@ -22,6 +22,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import net.lonelytransistor.commonlib.R;
 import net.lonelytransistor.commonlib.Utils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +52,7 @@ public class SelectorAdapter extends BaseAdapter {
     public void sort(Store.SortOrder s, Filter.FilterListener listener) {
         if (store == null)
             return;
+        collapseAllDetails();
         store.sort(s, listener);
     }
     public void filter(CharSequence constraint) {
@@ -59,6 +61,7 @@ public class SelectorAdapter extends BaseAdapter {
     public void filter(CharSequence constraint, Filter.FilterListener listener) {
         if (store == null)
             return;
+        collapseAllDetails();
         store.filter(constraint, listener);
     }
     public void setAllStates(boolean s) {
@@ -132,31 +135,21 @@ public class SelectorAdapter extends BaseAdapter {
         View view = inflate(v, R.layout.apk_selector_listview_element_separator);
         v.addView(view);
     }
-    private void updateInnerExtras(Store.ApkInfo app, LinearLayout inner) {
-        TextInputLayout regexParent = (TextInputLayout) inflate(inner, R.layout.apk_selector_listview_element_string);
-        regexParent.setHint(R.string.regex);
-        TextInputEditText regexInput = regexParent.findViewById(R.id.input);
-        regexInput.setText(app.notificationRegex);
-        regexInput.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                app.notificationRegex = ((EditText) v).getText().toString();
-            }
-        });
-        inner.addView(regexParent);
-
-        addSeparator(inner);
-
-        Map<String, String> fieldNames = new HashMap<>();
+    private Map<String, String> fieldNames = new HashMap<>();
+    private void updateFieldNames(Store.ApkInfo app) {
         if (app.extra.containsKey(FIELD_NAMES_EXTRA)) {
-            Object fieldNamesObj = app.extra.getSerializable(FIELD_NAMES_EXTRA);
+            Object fieldNamesObj = app.extra.get(FIELD_NAMES_EXTRA);
             if (fieldNamesObj instanceof Map<?, ?>)
-                fieldNames = (Map<String,String>) fieldNamesObj;
+                fieldNames = (Map<String, String>) fieldNamesObj;
         }
-
-        for (String key : app.extra.keySet()) {
+    }
+    private void updateInnerExtras(Map<String, Serializable> extra, LinearLayout inner) {
+        if (extra == null)
+            return;
+        for (String key : extra.keySet()) {
             if (key.equals(FIELD_NAMES_EXTRA))
                 continue;
-            Object obj = app.extra.get(key);
+            Object obj = extra.get(key);
             String title = fieldNames.getOrDefault(key, key);
             View viewParent = null;
 
@@ -169,7 +162,7 @@ public class SelectorAdapter extends BaseAdapter {
                 input.setText((String) obj);
                 input.setOnFocusChangeListener((v, hasFocus) -> {
                     if (!hasFocus) {
-                        app.extra.putString(key, ((EditText) v).getText().toString());
+                        extra.put(key, ((EditText) v).getText().toString());
                     }
                 });
             } else if (obj instanceof Integer) {
@@ -186,7 +179,7 @@ public class SelectorAdapter extends BaseAdapter {
                         try {
                             val = Integer.parseInt(String.valueOf(i.getText()));
                         } catch (NumberFormatException ignored) {}
-                        app.extra.putInt(key, val);
+                        extra.put(key, val);
                     }
                 });
 
@@ -198,7 +191,7 @@ public class SelectorAdapter extends BaseAdapter {
                         val = Integer.parseInt(String.valueOf(i.getText()));
                     } catch (NumberFormatException ignored) {}
                     val += 1;
-                    app.extra.putInt(key, val);
+                    extra.put(key, val);
                     i.setText(String.valueOf(val));
                 });
 
@@ -210,7 +203,7 @@ public class SelectorAdapter extends BaseAdapter {
                         val = Integer.parseInt(String.valueOf(i.getText()));
                     } catch (NumberFormatException ignored) {}
                     val -= 1;
-                    app.extra.putInt(key, val);
+                    extra.put(key, val);
                     i.setText(String.valueOf(val));
                 });
             } else if (obj instanceof Float) {
@@ -227,7 +220,7 @@ public class SelectorAdapter extends BaseAdapter {
                         try {
                             val = Float.parseFloat(String.valueOf(i.getText()));
                         } catch (NumberFormatException ignored) {}
-                        app.extra.putFloat(key, val);
+                        extra.put(key, val);
                     }
                 });
 
@@ -239,7 +232,7 @@ public class SelectorAdapter extends BaseAdapter {
                         val = Float.parseFloat(String.valueOf(i.getText()));
                     } catch (NumberFormatException ignored) {}
                     val += 0.1f;
-                    app.extra.putFloat(key, val);
+                    extra.put(key, val);
                     i.setText(String.valueOf(val));
                 });
 
@@ -251,7 +244,7 @@ public class SelectorAdapter extends BaseAdapter {
                         val = Float.parseFloat(String.valueOf(i.getText()));
                     } catch (NumberFormatException ignored) {}
                     val -= 0.1f;
-                    app.extra.putFloat(key, val);
+                    extra.put(key, val);
                     i.setText(String.valueOf(val));
                 });
             } else if (obj instanceof Boolean) {
@@ -260,10 +253,10 @@ public class SelectorAdapter extends BaseAdapter {
                 viewParentO.setText(title);
                 viewParentO.setChecked((boolean) obj);
                 viewParentO.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    app.extra.putBoolean(key, isChecked);
+                    extra.put(key, isChecked);
                 });
             } else {
-                Log.e(TAG, "Invalid bundle element: " + key + "=" + obj);
+                Log.e(TAG, "Invalid extra: " + key + "=" + obj);
             }
             if (viewParent != null) {
                 inner.addView(viewParent);
@@ -275,16 +268,29 @@ public class SelectorAdapter extends BaseAdapter {
         SwitchMaterial globalCheckBox = elementView.findViewById(R.id.appCheckBox);
 
         List<SwitchMaterial> catCheckBox = new ArrayList<>();
+        List<LinearLayout> catExtras = new ArrayList<>();
         for (Store.NotificationGroup cat : app.notificationGroups) {
+            LinearLayout layout = new LinearLayout(inner.getContext());
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            layout.setLayoutParams(layoutParams);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setVisibility(cat.monitored ? View.VISIBLE : View.GONE);
+            updateInnerExtras(cat.extra, layout);
+            catExtras.add(layout);
+
             SwitchMaterial checkBox = new SwitchMaterial(inner.getContext());
             checkBox.setText(cat.name);
             checkBox.setChecked(cat.monitored);
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 cat.monitored = isChecked;
+                layout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
                 updateSwitch(globalCheckBox, app.notificationGroups);
             });
             catCheckBox.add(checkBox);
+
             inner.addView(checkBox);
+            inner.addView(layout);
         }
 
         globalCheckBox.setOnClickListener((v)-> {
@@ -292,8 +298,9 @@ public class SelectorAdapter extends BaseAdapter {
             for (Store.NotificationGroup cat : app.notificationGroups) {
                 cat.monitored = s;
             }
-            for (SwitchMaterial checkBox : catCheckBox) {
-                checkBox.setChecked(s);
+            for (int ix=0; ix<catCheckBox.size(); ix++) {
+                catCheckBox.get(ix).setChecked(s);
+                catExtras.get(ix).setVisibility(s ? View.VISIBLE : View.GONE);
             }
             cb.onFilterComplete(0);
         });
@@ -334,8 +341,7 @@ public class SelectorAdapter extends BaseAdapter {
         LinearLayout inner = elementView.findViewById(R.id.innerLayout);
         inner.setVisibility(View.VISIBLE);
         icon.setImageDrawable(Utils.getDrawable(context, R.drawable.chevron_up, Utils.FOREGROUND_COLOR));
-        updateInnerExtras(app, inner);
-        addSeparator(inner);
+        updateInnerExtras(app.extra, inner);
         updateInnerCategoriesShown(app, elementView);
 
         expandedDetails.put(elementView, app);
@@ -352,6 +358,7 @@ public class SelectorAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         Store.ApkInfo app = getItem(position);
+        updateFieldNames(app);
         if (convertView == null) {
             convertView = inflate(parent, R.layout.apk_selector_listview_element);
         }
