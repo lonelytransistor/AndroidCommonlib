@@ -276,6 +276,7 @@ public class SelectorAdapter extends BaseAdapter {
             layout.setLayoutParams(layoutParams);
             layout.setOrientation(LinearLayout.VERTICAL);
             layout.setVisibility(cat.monitored ? View.VISIBLE : View.GONE);
+            layout.setBackgroundColor(Utils.FOREGROUND_COLOR & 0x00FFFFFF | 0x20000000);
             updateInnerExtras(cat.extra, layout);
             catExtras.add(layout);
 

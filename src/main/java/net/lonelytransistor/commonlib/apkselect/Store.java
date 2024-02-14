@@ -137,12 +137,18 @@ public abstract class Store extends Filter {
             }
         });
     }
+    boolean isEmpty() {
+        return infos.isEmpty();
+    }
     protected abstract Data load(ApkInfo info);
     public abstract void save(ApkInfo info, Data data);
     public abstract void save(Set<String> monitoredPackages);
     protected abstract List<NotificationChannel> getNotificationChannels(String pkgName);
 
     public void save() {
+        if (isEmpty())
+            return;
+
         Set<String> pkgNames = new HashSet<>();
         for (ApkInfo app : infos) {
             Map<String, Map<String,Serializable>> monitoredGroups = new HashMap<>();

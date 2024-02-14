@@ -55,6 +55,26 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 
 public class Utils {
+    public interface SwitchAdv {
+        Object run();
+    }
+    public static Object switch_adv(Object var, SwitchAdv t, SwitchAdv f, Object... cases) {
+        if (cases.length % 2 != 0) {
+            throw new IllegalArgumentException("Arguments must be in pairs of conditions and actions");
+        }
+        for (int i = 0; i < cases.length; i += 2) {
+            if (cases[i].equals(var)) {
+                ((Runnable) cases[i + 1]).run();
+                return t.run();
+            }
+        }
+        return f.run();
+    }
+    public static void switch_adv(Object var, Object v0, Runnable r0, Object v1, Runnable r1, Object v2, Runnable r2) {
+        if (var == v0) r0.run();
+        else if (var == v1) r1.run();
+        else if (var == v2) r2.run();
+    }
     public static <T> List<T> findViewsByType(View parent, Class<T> type) {
         return findViewsByTypePriv(parent, type, false);
     }
@@ -201,6 +221,7 @@ public class Utils {
 
     public static int FOREGROUND_COLOR = 0;
     public static int BACKGROUND_COLOR = 0;
+    public static int HIGHLIGHT_COLOR = 0;
     public static int ACCENT_COLOR = 0;
     public static int drawableToColor(Drawable drawable) {
         Bitmap bitmap = Bitmap.createBitmap(
@@ -232,6 +253,12 @@ public class Utils {
             ctx.getTheme().resolveAttribute(
                     android.R.attr.colorAccent, color, true);
             ACCENT_COLOR = color.data;
+        }
+        if (HIGHLIGHT_COLOR == 0) {
+            TypedValue color = new TypedValue();
+            ctx.getTheme().resolveAttribute(
+                    android.R.attr.colorFocusedHighlight, color, true);
+            HIGHLIGHT_COLOR = color.data;
         }
         if (FOREGROUND_COLOR == 0) {
             ViewGroup colorGetter = (ViewGroup) ctx.getLayoutInflater().inflate(R.layout._color_getter, null);

@@ -1,19 +1,19 @@
 package net.lonelytransistor.commonlib.apkselect;
 
+import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SearchView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 
 import net.lonelytransistor.commonlib.ProgressDrawable;
 import net.lonelytransistor.commonlib.R;
@@ -38,34 +38,11 @@ public abstract class SelectorActivity extends AppCompatActivity {
     private static Drawable[] selectIcons;
     private static Drawable[] sortIcons;
 
+    private Menu thisMenu = null;
+
     protected abstract String getHeader();
     protected abstract void getStore(Store.Callback cb);
 
-    private void updateActionBar() {
-        if (actionBar == null || appsAdapter == null)
-            return;
-        View actionBarView = actionBar.getCustomView();
-        if (actionBarView == null)
-            return;
-
-        ((TextView) actionBarView.findViewById(R.id.titleTextView))
-                .setText(getHeader());
-        actionBarView = actionBarView.findViewById(R.id.toolbar_buttons);
-        if (actionBarView == null)
-            return;
-
-        ((ImageButton) actionBarView.findViewById(R.id.apps_selector_reload))
-                .setImageDrawable(reloadIcon);
-        ((ImageButton) actionBarView.findViewById(R.id.apps_selector_invert))
-                .setImageDrawable(invertIcons[
-                        appsAdapter.getCount(true) > appsAdapter.getCount(false) ? 0 : 1]);
-        ((ImageButton) actionBarView.findViewById(R.id.apps_selector_select))
-                .setImageDrawable(selectIcons[
-                        appsAdapter.getCount(true) > 0 ? 0 : 1]);
-        ((ImageButton) actionBarView.findViewById(R.id.apps_selector_sort))
-                .setImageDrawable(sortIcons[
-                        appsAdapter.getSort().ordinal()]);
-    }
 
     private void setAdapter(Store store) {
         if (store == null) {
@@ -76,7 +53,7 @@ public abstract class SelectorActivity extends AppCompatActivity {
         appsAdapter = new SelectorAdapter(this, this.store,
                 (s) -> {
                     appsAdapter.notifyDataSetChanged();
-                    updateActionBar();
+                    onUpdateOptionItems();
                 });
         ((ListView) findViewById(R.id.apps_selector_listview)).setAdapter(appsAdapter);
     }
@@ -91,30 +68,51 @@ public abstract class SelectorActivity extends AppCompatActivity {
         actionBar.setBackgroundDrawable(actionBarBackground);
     }
 
+    private boolean COLOR_INITIALIZED = false;
+    private int BACKGROUND_COLOR = Utils.BACKGROUND_COLOR;
+    private int ACCENT_COLOR = Utils.ACCENT_COLOR;
+    private int BUTTON_COLOR = Utils.FOREGROUND_COLOR;
     private void initialize() {
         Utils.initialize(this);
 
+        if (!COLOR_INITIALIZED) {
+            TypedValue typedValue = new TypedValue();
+            if (actionBar.getThemedContext().getTheme().resolveAttribute(android.R.attr.actionBarStyle, typedValue, true)) {
+                int[] attrs = {android.R.attr.background,
+                        android.R.attr.colorFocusedHighlight,
+                        android.R.attr.colorButtonNormal};
+                TypedArray actionBarStyleAttrs = obtainStyledAttributes(typedValue.data, attrs);
+                try {
+                    BACKGROUND_COLOR = actionBarStyleAttrs.getColor(0, Utils.BACKGROUND_COLOR);
+                    ACCENT_COLOR = actionBarStyleAttrs.getColor(1, Utils.ACCENT_COLOR);
+                    BUTTON_COLOR = actionBarStyleAttrs.getColor(2, Utils.FOREGROUND_COLOR);
+                } finally {
+                    actionBarStyleAttrs.recycle();
+                }
+            }
+            COLOR_INITIALIZED = true;
+        }
         if (actionBarBackground == null)
-            actionBarBackground = new ProgressDrawable(Utils.BACKGROUND_COLOR, Utils.ACCENT_COLOR, 0.0f);
+            actionBarBackground = new ProgressDrawable(BACKGROUND_COLOR, ACCENT_COLOR, 0.0f);
         if (backSaveIcon == null)
-            backSaveIcon = Utils.getDrawable(this, R.drawable.save_back, Utils.FOREGROUND_COLOR);
+            backSaveIcon = Utils.getDrawable(this, R.drawable.save_back, BUTTON_COLOR);
         if (tickSaveIcon == null)
-            tickSaveIcon = Utils.getDrawable(this, R.drawable.save_tick, Utils.FOREGROUND_COLOR);
+            tickSaveIcon = Utils.getDrawable(this, R.drawable.save_tick, BUTTON_COLOR);
         if (reloadIcon == null)
-            reloadIcon = Utils.getDrawable(this, R.drawable.refresh, Utils.FOREGROUND_COLOR);
+            reloadIcon = Utils.getDrawable(this, R.drawable.refresh, BUTTON_COLOR);
         if (invertIcons == null)
             invertIcons = new Drawable[]{
-                    Utils.getDrawable(this, R.drawable.select_invert_off, Utils.FOREGROUND_COLOR),
-                    Utils.getDrawable(this, R.drawable.select_invert_on, Utils.FOREGROUND_COLOR)};
+                    Utils.getDrawable(this, R.drawable.select_invert_off, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.select_invert_on, BUTTON_COLOR)};
         if (selectIcons == null)
             selectIcons = new Drawable[]{
-                    Utils.getDrawable(this, R.drawable.select_all_off, Utils.FOREGROUND_COLOR),
-                    Utils.getDrawable(this, R.drawable.select_all_on, Utils.FOREGROUND_COLOR)};
+                    Utils.getDrawable(this, R.drawable.select_all_off, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.select_all_on, BUTTON_COLOR)};
         if (sortIcons == null)
             sortIcons = new Drawable[]{
-                    Utils.getDrawable(this, R.drawable.sort_off, Utils.FOREGROUND_COLOR),
-                    Utils.getDrawable(this, R.drawable.sort_az, Utils.FOREGROUND_COLOR),
-                    Utils.getDrawable(this, R.drawable.sort_za, Utils.FOREGROUND_COLOR)};
+                    Utils.getDrawable(this, R.drawable.sort_off, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.sort_az, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.sort_za, BUTTON_COLOR)};
     }
     @Override
     protected void onPause() {
@@ -122,13 +120,60 @@ public abstract class SelectorActivity extends AppCompatActivity {
         if (store != null)
             store.save();
     }
+    private void onUpdateOptionItem(MenuItem menu) {
+        if (menu.getItemId() == R.id.apps_selector_reload) {
+            menu.setIcon(reloadIcon);
+        } else if (menu.getItemId() == R.id.apps_selector_invert) {
+            menu.setIcon(invertIcons[appsAdapter==null ? 0 :
+                    appsAdapter.getCount(true) > appsAdapter.getCount(false) ? 0 : 1]);
+        } else if (menu.getItemId() == R.id.apps_selector_select) {
+            menu.setIcon(selectIcons[appsAdapter==null ? 0 :
+                    appsAdapter.getCount(true) > 0 ? 0 : 1]);
+        } else if (menu.getItemId() == R.id.apps_selector_sort) {
+            menu.setIcon(sortIcons[appsAdapter==null ? 0 :
+                    appsAdapter.getSort().ordinal()]);
+        }
+    }
+    private void onUpdateOptionItems() {
+        for (int ix=0; ix<thisMenu.size(); ix++) {
+            onUpdateOptionItem(thisMenu.getItem(ix));
+        }
+    }
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == android.R.id.home && isTaskRoot()) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        boolean ret = (boolean) Utils.switch_adv(item.getItemId(),
+            () -> {
+                onUpdateOptionItem(item);
+                return true;
+            },
+            () -> false,
+            android.R.id.home, (Runnable) () -> {
+                if (isTaskRoot())
+                    finish();
+            },
+            R.id.apps_selector_reload, (Runnable) () -> {
+                reloadStore();
+            },
+            R.id.apps_selector_invert, (Runnable) () -> {
+                if (appsAdapter != null)
+                    appsAdapter.invertAllStates();
+            },
+            R.id.apps_selector_select, (Runnable) () -> {
+                if (appsAdapter != null)
+                    appsAdapter.setAllStates(appsAdapter.getCount(true) == 0);
+            },
+            R.id.apps_selector_sort, (Runnable) () -> {
+                if (appsAdapter != null)
+                    appsAdapter.sort(sortOrders[(appsAdapter.getSort().ordinal() + 1) % sortOrders.length]);
+            }
+        );
+        return ret ? ret : super.onOptionsItemSelected(item);
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.apk_selector_toolbar_menu, menu);
+        thisMenu = menu;
+        return true;
     }
 
     private void reloadStore() {
@@ -150,56 +195,19 @@ public abstract class SelectorActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initialize();
+        setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_DarkActionBar);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
         setContentView(R.layout.apk_selector_activity);
         executor = getMainExecutor();
-
         actionBar = getSupportActionBar();
-        if (actionBar == null) {
-            setSupportActionBar((Toolbar) View.inflate(this, R.layout.apk_selector_toolbar, null));
-            actionBar = getSupportActionBar();
-        }
-        if (actionBar != null) {
-            actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-            actionBar.setHomeButtonEnabled(true);
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setCustomView(R.layout.apk_selector_toolbar);
-            actionBar.setTitle(getHeader());
 
-            View actionBarView = actionBar.getCustomView();
-            actionBar.setHomeAsUpIndicator(
-                    Utils.getDrawable(this,
-                            isTaskRoot() ? R.drawable.save_tick : R.drawable.save_back,
-                            Utils.FOREGROUND_COLOR));
+        initialize();
 
-            actionBarView.findViewById(R.id.apps_selector_reload)
-                    .setOnClickListener((v) -> {
-                        reloadStore();
-                    });
-            actionBarView.findViewById(R.id.apps_selector_invert)
-                    .setOnClickListener((v) -> {
-                        if (appsAdapter == null)
-                            return;
-
-                        appsAdapter.invertAllStates();
-                    });
-            actionBarView.findViewById(R.id.apps_selector_select)
-                    .setOnClickListener((v) -> {
-                        if (appsAdapter == null)
-                            return;
-
-                        appsAdapter.setAllStates(appsAdapter.getCount(true) == 0);
-                    });
-            actionBarView.findViewById(R.id.apps_selector_sort)
-                    .setOnClickListener((v) -> {
-                        if (appsAdapter == null)
-                            return;
-
-                        appsAdapter.sort(sortOrders[(appsAdapter.getSort().ordinal() + 1) % sortOrders.length]);
-                    });
-        }
+        actionBar.setTitle(getHeader());
+        actionBar.setHomeButtonEnabled(true);
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeAsUpIndicator(isTaskRoot() ? backSaveIcon : tickSaveIcon);
         ((SearchView) findViewById(R.id.apps_selector_search))
                 .setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                     @Override

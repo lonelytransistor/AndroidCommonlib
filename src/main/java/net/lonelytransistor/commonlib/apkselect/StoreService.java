@@ -58,6 +58,8 @@ public abstract class StoreService extends NotificationListenerService {
                     }
                     @Override
                     public void save() {
+                        if (isEmpty())
+                            return;
                         StoreService.this.onBeforeSave();
                         super.save();
                     }

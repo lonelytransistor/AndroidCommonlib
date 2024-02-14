@@ -28,4 +28,8 @@
     <string name="recv_bt">Receiving data</string>
     <string name="send_bt">Sending data</string>
     <string name="close_bt">Disconnecting</string>
+    <string name="reload_app_list">Reload app list</string>
+    <string name="sort_by">Sort by…</string>
+    <string name="select_deselect_all">Select/deselect all</string>
+    <string name="invert_selection">Invert selection</string>
 </resources>

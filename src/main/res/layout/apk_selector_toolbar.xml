@@ -15,87 +15,15 @@
         <TextView
             android:id="@+id/titleTextView"
             style="@style/TextAppearance.AppCompat.Widget.ActionBar.Title"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
             android:autoSizeTextType="uniform"
             android:textAlignment="textStart"
             android:textColor="?attr/colorOnBackground"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/toolbar_buttons"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <LinearLayout
-            android:id="@+id/toolbar_buttons"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:gravity="end"
-            android:orientation="horizontal"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-
-            <ImageButton
-                android:id="@+id/apps_selector_reload"
-                style="@style/Widget.AppCompat.ImageButton"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/invert"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/refresh"
-                android:tint="?attr/colorOnBackground"
-                app:tint="?attr/colorOnBackground" />
-
-            <ImageButton
-                android:id="@+id/apps_selector_invert"
-                style="@style/Widget.AppCompat.ImageButton"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/invert"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/select_invert_on"
-                android:tint="?attr/colorOnBackground"
-                app:tint="?attr/colorOnBackground" />
-
-            <ImageButton
-                android:id="@+id/apps_selector_select"
-                style="@style/Widget.AppCompat.ImageButton"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/select_all"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/select_all_on"
-                android:tint="?attr/colorOnBackground"
-                app:tint="?attr/colorOnBackground" />
-
-            <ImageButton
-                android:id="@+id/apps_selector_sort"
-                style="@style/Widget.AppCompat.ImageButton"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/deselect_all"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/sort_off"
-                android:tint="?attr/colorOnBackground"
-                app:tint="?attr/colorOnBackground" />
-
-        </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.appcompat.widget.Toolbar>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/apps_selector_reload"
+        android:title="@string/reload_app_list"
+        android:icon="@drawable/refresh"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/apps_selector_invert"
+        android:title="@string/invert_selection"
+        android:icon="@drawable/select_invert_on"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/apps_selector_select"
+        android:title="@string/select_deselect_all"
+        android:icon="@drawable/select_all_on"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/apps_selector_sort"
+        android:title="@string/sort_by"
+        android:icon="@drawable/sort_off"
+        app:showAsAction="always" />
+</menu>
