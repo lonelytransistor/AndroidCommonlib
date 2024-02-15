@@ -374,7 +374,7 @@ public class SelectorAdapter extends BaseAdapter {
             toggleDetails(app, elementView);
         });
 
-        updateInnerCategoriesHidden(app, elementView);
+        collapseDetails(app, elementView);
 
         return convertView;
     }
