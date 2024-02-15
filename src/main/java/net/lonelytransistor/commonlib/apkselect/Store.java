@@ -119,7 +119,6 @@ public abstract class Store extends Filter {
     }
     public void load(Callback progressCb) {
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
         List<ResolveInfo> allApps = packageManager.queryIntentActivities(intent, 0);
 
         executor.execute(() -> {
