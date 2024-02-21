@@ -27,6 +27,7 @@ public abstract class SelectorActivity extends AppCompatActivity {
 
     private Executor executor = null;
     private Store store = null;
+    private boolean storeLoaded = false;
     private ActionBar actionBar = null;
     private SelectorAdapter appsAdapter = null;
 
@@ -61,6 +62,7 @@ public abstract class SelectorActivity extends AppCompatActivity {
         appsAdapter.filter("");
         updateProgress(1.0f);
         appsAdapter.notifyDataSetChanged();
+        storeLoaded = true;
     }
     private void updateProgress(float fraction) {
         actionBar.setBackgroundDrawable(null);
@@ -117,7 +119,7 @@ public abstract class SelectorActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (store != null)
+        if (storeLoaded)
             store.save();
     }
     private void onUpdateOptionItem(MenuItem menu) {
