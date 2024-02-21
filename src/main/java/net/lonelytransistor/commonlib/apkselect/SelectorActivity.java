@@ -171,10 +171,32 @@ public abstract class SelectorActivity extends AppCompatActivity {
         );
         return ret ? ret : super.onOptionsItemSelected(item);
     }
+    protected enum Button {
+        INVERT,
+        SELECT_ALL,
+        RELOAD,
+        SORT
+    }
+    protected boolean isButtonVisible(Button btn) {
+        return true;
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.apk_selector_toolbar_menu, menu);
         thisMenu = menu;
+        for (int ix=0; ix<thisMenu.size(); ix++) {
+            MenuItem item = thisMenu.getItem(ix);
+            int itemId = item.getItemId();
+            if (itemId == R.id.apps_selector_invert) {
+                item.setVisible(isButtonVisible(Button.INVERT));
+            } else if (itemId == R.id.apps_selector_reload) {
+                item.setVisible(isButtonVisible(Button.RELOAD));
+            } else if (itemId == R.id.apps_selector_select) {
+                item.setVisible(isButtonVisible(Button.SELECT_ALL));
+            } else if (itemId == R.id.apps_selector_sort) {
+                item.setVisible(isButtonVisible(Button.SORT));
+            }
+        }
         return true;
     }
 
