@@ -13,7 +13,7 @@
         app:showAsAction="always" />
     <item
         android:id="@+id/apps_selector_select"
-        android:title="@string/select_deselect_all"
+        android:title="@string/select_all"
         android:icon="@drawable/select_all_on"
         app:showAsAction="always" />
     <item
@@ -21,4 +21,22 @@
         android:title="@string/sort_by"
         android:icon="@drawable/sort_off"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/apps_selector_show_system"
+        android:checkable="true"
+        android:icon="@drawable/hide_system"
+        android:title="@string/show_system"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/apps_selector_show_unselected"
+        android:checkable="true"
+        android:icon="@drawable/hide_unselected"
+        android:title="@string/show_unselected"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/apps_selector_show_selected"
+        android:checkable="true"
+        android:icon="@drawable/hide_selected"
+        android:title="@string/show_selected"
+        app:showAsAction="collapseActionView" />
 </menu>

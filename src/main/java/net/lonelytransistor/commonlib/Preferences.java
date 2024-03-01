@@ -4,19 +4,13 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
-import org.xmlpull.v1.XmlPullParserException;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -247,7 +241,7 @@ public class Preferences {
         }
     }
     public byte[] getXml() {
-        ByteArrayOutputStream2 outputStream = new ByteArrayOutputStream2();
+        XmlOutputStream outputStream = new XmlOutputStream();
         try {
             XmlUtils.writeMapXml(sharedPrefs.getAll(), outputStream);
         } catch (Exception e) {
@@ -332,8 +326,8 @@ public class Preferences {
         editor.apply();
     }
 
-    private static class ByteArrayOutputStream2 extends ByteArrayOutputStream {
-        ByteArrayOutputStream2() {
+    private static class XmlOutputStream extends ByteArrayOutputStream {
+        XmlOutputStream() {
             super(1024);
         }
         @Override

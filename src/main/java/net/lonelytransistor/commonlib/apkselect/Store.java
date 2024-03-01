@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 public abstract class Store extends Filter {
     private static final String TAG = "Store";
@@ -27,6 +29,9 @@ public abstract class Store extends Filter {
         ALPHABETIC_INVERSE
     }
 
+    public interface CallbackChannels {
+        void onDone(Map<String,String> channels);
+    }
     public interface Callback {
         void onStarted(Store apkStore);
         void onProgress(float p);
@@ -58,15 +63,13 @@ public abstract class Store extends Filter {
             icon = info.activityInfo.loadIcon(packageManager);
         }
 
-        private boolean update(Map<String, Map<String,Serializable>> monitoredChannels, Map<String,Serializable> extras, Map<String,Serializable> catExtras) {
-            List<NotificationChannel> allChannels = getNotificationChannels(pkgName);
+        private boolean update(Map<String, Map<String,Serializable>> monitoredChannels, Map<String,String> allChannels, Map<String,Serializable> extras, Map<String,Serializable> catExtras) {
             notificationGroups.clear();
             if (allChannels != null) {
-                for (NotificationChannel channel : allChannels) {
-                    String id = channel.getId();
+                for (String id : allChannels.keySet()) {
                     notificationGroups.add(new NotificationGroup(
-                            channel.getId(),
-                            channel.getName().toString(),
+                            id,
+                            allChannels.get(id),
                             monitoredChannels.containsKey(id),
                             monitoredChannels.getOrDefault(id, new HashMap<>(catExtras))));
                 }
@@ -127,22 +130,24 @@ public abstract class Store extends Filter {
                 progressCb.onProgress(((float) progress++) / ((float) allApps.size()));
                 ApkInfo app = new ApkInfo(info);
                 Data data = load(app);
-                if (app.update(data.categories, data.extra, data.catExtra)) {
-                    infos.add(app);
-                    names.add(app.pkgName);
-                    labels.add(app.label);
-                }
-                progressCb.onProgress(1.0f);
+                getNotificationChannels(app.pkgName, channels -> {
+                    if (app.update(data.categories, channels, data.extra, data.catExtra)) {
+                        infos.add(app);
+                        names.add(app.pkgName);
+                        labels.add(app.label);
+                    }
+                });
             }
+            progressCb.onProgress(1.0f);
         });
     }
-    boolean isEmpty() {
+    protected boolean isEmpty() {
         return infos.isEmpty();
     }
     protected abstract Data load(ApkInfo info);
     public abstract void save(ApkInfo info, Data data);
     public abstract void save(Set<String> monitoredPackages);
-    protected abstract List<NotificationChannel> getNotificationChannels(String pkgName);
+    protected abstract void getNotificationChannels(String pkgName, CallbackChannels cb);
 
     public void save() {
         if (isEmpty())

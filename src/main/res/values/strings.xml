@@ -6,8 +6,6 @@
     <string name="search">Search…</string>
     <string name="regex">Regular expression</string>
     <string name="invert">Invert</string>
-    <string name="select_all">Select all</string>
-    <string name="deselect_all">Deselect all</string>
 
     <string name="mute">Mute</string>
     <string name="unmute">Unmute</string>
@@ -30,6 +28,16 @@
     <string name="close_bt">Disconnecting</string>
     <string name="reload_app_list">Reload app list</string>
     <string name="sort_by">Sort by…</string>
-    <string name="select_deselect_all">Select/deselect all</string>
+    <string name="sort_none">No sorting</string>
+    <string name="sort_alphabetically">Sort alphabetically</string>
+    <string name="sort_reverse_alphabetically">Sort reverse alphabetically</string>
+    <string name="select_all">Select all</string>
+    <string name="deselect_all">Deselect all</string>
     <string name="invert_selection">Invert selection</string>
+    <string name="show_system">Show system</string>
+    <string name="hide_system">Hide system</string>
+    <string name="show_unselected">Show unselected</string>
+    <string name="hide_unselected">Hide unselected</string>
+    <string name="show_selected">Show selected</string>
+    <string name="hide_selected">Hide selected</string>
 </resources>

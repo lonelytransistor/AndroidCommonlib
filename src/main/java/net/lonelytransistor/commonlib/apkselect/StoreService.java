@@ -10,7 +10,9 @@ import android.os.UserHandle;
 import android.service.notification.NotificationListenerService;
 import android.util.Log;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class StoreService extends NotificationListenerService {
@@ -72,8 +74,12 @@ public abstract class StoreService extends NotificationListenerService {
                         StoreService.this.onAfterSave(monitoredPackages);
                     }
                     @Override
-                    protected List<NotificationChannel> getNotificationChannels(String pkgName) {
-                        return StoreService.this.getNotificationChannels(pkgName, userHandle);
+                    protected void getNotificationChannels(String pkgName, CallbackChannels cb) {
+                        Map<String,String> channels = new HashMap<>();
+                        for (NotificationChannel channel : StoreService.this.getNotificationChannels(pkgName, userHandle)) {
+                            channels.put(channel.getId(), channel.getName().toString());
+                        }
+                        cb.onDone(channels);
                     }
                 };
             } else {

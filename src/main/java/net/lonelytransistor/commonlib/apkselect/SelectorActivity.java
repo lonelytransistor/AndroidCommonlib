@@ -1,5 +1,6 @@
 package net.lonelytransistor.commonlib.apkselect;
 
+import android.annotation.SuppressLint;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -36,9 +37,19 @@ public abstract class SelectorActivity extends AppCompatActivity {
     private static Drawable tickSaveIcon;
     private static Drawable reloadIcon;
     private static Drawable[] invertIcons;
+
     private static Drawable[] selectIcons;
     private static Drawable[] sortIcons;
+    private static Drawable[] showSystemIcons;
+    private static Drawable[] showSelectedIcons;
+    private static Drawable[] showDeselectedIcons;
+    private static String[] selectText;
+    private static String[] sortText;
+    private static String[] showSystemText;
+    private static String[] showSelectedText;
+    private static String[] showDeselectedText;
 
+    private float oldFraction = 0;
     private Menu thisMenu = null;
 
     protected abstract String getHeader();
@@ -65,15 +76,20 @@ public abstract class SelectorActivity extends AppCompatActivity {
         storeLoaded = true;
     }
     private void updateProgress(float fraction) {
-        actionBar.setBackgroundDrawable(null);
-        actionBarBackground.setFraction((fraction > 0 && fraction < 1) ? fraction : 0);
-        actionBar.setBackgroundDrawable(actionBarBackground);
+        if (fraction > oldFraction) {
+            oldFraction = (fraction > 0 && fraction < 1) ? fraction : 0;
+
+            actionBar.setBackgroundDrawable(null);
+            actionBarBackground.setFraction(oldFraction);
+            actionBar.setBackgroundDrawable(actionBarBackground);
+        }
     }
 
     private boolean COLOR_INITIALIZED = false;
     private int BACKGROUND_COLOR = Utils.BACKGROUND_COLOR;
     private int ACCENT_COLOR = Utils.ACCENT_COLOR;
     private int BUTTON_COLOR = Utils.FOREGROUND_COLOR;
+    @SuppressLint("ResourceType")
     private void initialize() {
         Utils.initialize(this);
 
@@ -110,11 +126,49 @@ public abstract class SelectorActivity extends AppCompatActivity {
             selectIcons = new Drawable[]{
                     Utils.getDrawable(this, R.drawable.select_all_off, BUTTON_COLOR),
                     Utils.getDrawable(this, R.drawable.select_all_on, BUTTON_COLOR)};
+        if (selectText == null)
+            selectText = new String[]{
+                    getText(R.string.deselect_all).toString(),
+                    getText(R.string.select_all).toString()
+            };
         if (sortIcons == null)
             sortIcons = new Drawable[]{
                     Utils.getDrawable(this, R.drawable.sort_off, BUTTON_COLOR),
                     Utils.getDrawable(this, R.drawable.sort_az, BUTTON_COLOR),
                     Utils.getDrawable(this, R.drawable.sort_za, BUTTON_COLOR)};
+        if (sortText == null)
+            sortText = new String[]{
+                    getText(R.string.sort_none).toString(),
+                    getText(R.string.sort_alphabetically).toString(),
+                    getText(R.string.sort_reverse_alphabetically).toString()
+            };
+        if (showSelectedIcons == null)
+            showSelectedIcons = new Drawable[]{
+                    Utils.getDrawable(this, R.drawable.hide_selected, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.show_selected, BUTTON_COLOR)};
+        if (showSelectedText == null)
+            showSelectedText = new String[]{
+                    getText(R.string.hide_selected).toString(),
+                    getText(R.string.show_selected).toString()
+            };
+        if (showDeselectedIcons == null)
+            showDeselectedIcons = new Drawable[]{
+                    Utils.getDrawable(this, R.drawable.hide_unselected, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.show_unselected, BUTTON_COLOR)};
+        if (showDeselectedText == null)
+            showDeselectedText = new String[]{
+                    getText(R.string.hide_unselected).toString(),
+                    getText(R.string.show_unselected).toString()
+            };
+        if (showSystemIcons == null)
+            showSystemIcons = new Drawable[]{
+                    Utils.getDrawable(this, R.drawable.hide_system, BUTTON_COLOR),
+                    Utils.getDrawable(this, R.drawable.show_system, BUTTON_COLOR)};
+        if (showSystemText == null)
+            showSystemText = new String[]{
+                    getText(R.string.hide_system).toString(),
+                    getText(R.string.show_system).toString()
+            };
     }
     @Override
     protected void onPause() {
@@ -126,14 +180,16 @@ public abstract class SelectorActivity extends AppCompatActivity {
         if (menu.getItemId() == R.id.apps_selector_reload) {
             menu.setIcon(reloadIcon);
         } else if (menu.getItemId() == R.id.apps_selector_invert) {
-            menu.setIcon(invertIcons[appsAdapter==null ? 0 :
-                    appsAdapter.getCount(true) > appsAdapter.getCount(false) ? 0 : 1]);
+            int ix = appsAdapter==null || appsAdapter.getCount(true)>appsAdapter.getCount(false) ? 0 : 1;
+            menu.setIcon(invertIcons[ix]);
         } else if (menu.getItemId() == R.id.apps_selector_select) {
-            menu.setIcon(selectIcons[appsAdapter==null ? 0 :
-                    appsAdapter.getCount(true) > 0 ? 0 : 1]);
+            int ix = appsAdapter==null || appsAdapter.getCount(true)>0 ? 0 : 1;
+            menu.setIcon(selectIcons[ix]);
+            menu.setTitle(selectText[ix]);
         } else if (menu.getItemId() == R.id.apps_selector_sort) {
-            menu.setIcon(sortIcons[appsAdapter==null ? 0 :
-                    appsAdapter.getSort().ordinal()]);
+            int ix = appsAdapter==null ? 0 : appsAdapter.getSort().ordinal();
+            menu.setIcon(sortIcons[ix]);
+            menu.setTitle(sortText[ix]);
         }
     }
     private void onUpdateOptionItems() {
@@ -175,7 +231,10 @@ public abstract class SelectorActivity extends AppCompatActivity {
         INVERT,
         SELECT_ALL,
         RELOAD,
-        SORT
+        SORT,
+        SHOW_SELECTED,
+        SHOW_UNSELECTED,
+        SHOW_SYSTEM
     }
     protected boolean isButtonVisible(Button btn) {
         return true;
@@ -195,6 +254,12 @@ public abstract class SelectorActivity extends AppCompatActivity {
                 item.setVisible(isButtonVisible(Button.SELECT_ALL));
             } else if (itemId == R.id.apps_selector_sort) {
                 item.setVisible(isButtonVisible(Button.SORT));
+            } else if (itemId == R.id.apps_selector_show_unselected) {
+                item.setVisible(isButtonVisible(Button.SHOW_UNSELECTED));
+            } else if (itemId == R.id.apps_selector_show_selected) {
+                item.setVisible(isButtonVisible(Button.SHOW_SELECTED));
+            } else if (itemId == R.id.apps_selector_show_system) {
+                item.setVisible(isButtonVisible(Button.SHOW_SYSTEM));
             }
         }
         return true;
