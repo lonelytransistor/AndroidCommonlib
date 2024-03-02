@@ -31,16 +31,20 @@ public abstract class StoreService extends NotificationListenerService {
             if (apkStore == null) {
                 Log.i(TAG, "Store empty");
                 apkStore = new Store(StoreService.this, new Store.Callback() {
+                    private boolean started = false;
                     @Override
                     public void onStarted(Store apkStore) {}
                     @Override
                     public void onProgress(float p) {
                         if (cb == null || apkStore == null)
                             return;
-                        if (p <= 0) {
+                        if (!started) {
                             cb.onStarted(apkStore);
-                        } else if (p >= 1) {
+                            started = true;
+                        }
+                        if (p >= 1) {
                             cb.onFinished(apkStore);
+                            started = false;
                         } else {
                             cb.onProgress(p);
                         }
@@ -72,6 +76,10 @@ public abstract class StoreService extends NotificationListenerService {
                     @Override
                     public void save(Set<String> monitoredPackages) {
                         StoreService.this.onAfterSave(monitoredPackages);
+                    }
+                    @Override
+                    public void cancel() {
+                        StoreService.this.cancel();
                     }
                     @Override
                     protected void getNotificationChannels(String pkgName, CallbackChannels cb) {
@@ -106,6 +114,7 @@ public abstract class StoreService extends NotificationListenerService {
 
     protected abstract Store.Data load(Store.ApkInfo info);
     protected abstract void save(Store.ApkInfo info, Store.Data data);
+    protected void cancel() {}
     protected void onBeforeLoad() {}
     protected void onAfterLoad() {}
     protected void onBeforeSave() {}

@@ -20,6 +20,7 @@ import net.lonelytransistor.commonlib.ProgressDrawable;
 import net.lonelytransistor.commonlib.R;
 import net.lonelytransistor.commonlib.Utils;
 import java.util.concurrent.Executor;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class SelectorActivity extends AppCompatActivity {
     private static final String TAG = "SelectorActivity";
@@ -31,6 +32,7 @@ public abstract class SelectorActivity extends AppCompatActivity {
     private boolean storeLoaded = false;
     private ActionBar actionBar = null;
     private SelectorAdapter appsAdapter = null;
+    private final ReentrantLock mutex = new ReentrantLock();
 
     private static ProgressDrawable actionBarBackground;
     private static Drawable backSaveIcon;
@@ -68,12 +70,14 @@ public abstract class SelectorActivity extends AppCompatActivity {
                     onUpdateOptionItems();
                 });
         ((ListView) findViewById(R.id.apps_selector_listview)).setAdapter(appsAdapter);
+        Log.i(TAG, "setAdapter");
     }
     private void finishAdapter() {
         appsAdapter.filter("");
         updateProgress(1.0f);
         appsAdapter.notifyDataSetChanged();
         storeLoaded = true;
+        Log.i(TAG, "finishAdapter");
     }
     private void updateProgress(float fraction) {
         if (fraction > oldFraction) {
@@ -82,7 +86,15 @@ public abstract class SelectorActivity extends AppCompatActivity {
             actionBar.setBackgroundDrawable(null);
             actionBarBackground.setFraction(oldFraction);
             actionBar.setBackgroundDrawable(actionBarBackground);
+
+            ((ListView) findViewById(R.id.apps_selector_listview)).post(() -> {
+                mutex.lock();
+                store.updateSize();
+                appsAdapter.notifyDataSetChanged();
+                mutex.unlock();
+            });
         }
+        Log.i(TAG, "updateProgress" + fraction);
     }
 
     private boolean COLOR_INITIALIZED = false;
@@ -173,8 +185,11 @@ public abstract class SelectorActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (storeLoaded)
+        if (storeLoaded) {
             store.save();
+        } else {
+            store.cancel();
+        }
     }
     private void onUpdateOptionItem(MenuItem menu) {
         if (menu.getItemId() == R.id.apps_selector_reload) {

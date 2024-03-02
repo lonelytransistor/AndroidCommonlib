@@ -1,7 +1,5 @@
 package net.lonelytransistor.commonlib.apkselect;
 
-
-import android.app.NotificationChannel;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -18,11 +16,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class Store extends Filter {
     private static final String TAG = "Store";
+    private final ReentrantLock mutex = new ReentrantLock();
     public enum SortOrder {
         NONE,
         ALPHABETIC,
@@ -89,6 +87,7 @@ public abstract class Store extends Filter {
 
     private String filterString = "";
     private SortOrder sortOrder = SortOrder.NONE;
+    private int fakeSize = 0;
 
     private final Executor executor = Executors.newSingleThreadExecutor();
     private final PackageManager packageManager;
@@ -131,10 +130,16 @@ public abstract class Store extends Filter {
                 ApkInfo app = new ApkInfo(info);
                 Data data = load(app);
                 getNotificationChannels(app.pkgName, channels -> {
+                    if (names.contains(app.pkgName))
+                        return;
                     if (app.update(data.categories, channels, data.extra, data.catExtra)) {
+                        mutex.lock();
                         infos.add(app);
                         names.add(app.pkgName);
                         labels.add(app.label);
+                        filteredIndices.add(infos.size() - 1);
+                        fakeSize++;
+                        mutex.unlock();
                     }
                 });
             }
@@ -148,6 +153,7 @@ public abstract class Store extends Filter {
     public abstract void save(ApkInfo info, Data data);
     public abstract void save(Set<String> monitoredPackages);
     protected abstract void getNotificationChannels(String pkgName, CallbackChannels cb);
+    public abstract void cancel();
 
     public void save() {
         if (isEmpty())
@@ -170,9 +176,11 @@ public abstract class Store extends Filter {
         save(pkgNames);
     }
 
-
+    void updateSize() {
+        fakeSize = filteredIndices.size();
+    }
     public int size() {
-        return filteredIndices.size();
+        return fakeSize;
     }
     public int size(boolean s) {
         return s ? enabledIndices.size() : disabledIndices.size();
