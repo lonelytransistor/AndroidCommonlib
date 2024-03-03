@@ -84,8 +84,12 @@ public abstract class StoreService extends NotificationListenerService {
                     @Override
                     protected void getNotificationChannels(String pkgName, CallbackChannels cb) {
                         Map<String,String> channels = new HashMap<>();
-                        for (NotificationChannel channel : StoreService.this.getNotificationChannels(pkgName, userHandle)) {
-                            channels.put(channel.getId(), channel.getName().toString());
+                        try {
+                            for (NotificationChannel channel : StoreService.this.getNotificationChannels(pkgName, userHandle)) {
+                                channels.put(channel.getId(), channel.getName().toString());
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "No channels found", e);
                         }
                         cb.onDone(channels);
                     }

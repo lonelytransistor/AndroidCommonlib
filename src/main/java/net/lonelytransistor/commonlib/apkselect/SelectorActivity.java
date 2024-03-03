@@ -59,8 +59,10 @@ public abstract class SelectorActivity extends AppCompatActivity {
 
 
     private void setAdapter(Store store) {
+        storeLoaded = false;
+        ListView view = findViewById(R.id.apps_selector_listview);
         if (store == null) {
-            ((ListView) findViewById(R.id.apps_selector_listview)).setAdapter(null);
+            view.setAdapter(null);
             return;
         }
         this.store = store;
@@ -69,15 +71,24 @@ public abstract class SelectorActivity extends AppCompatActivity {
                     appsAdapter.notifyDataSetChanged();
                     onUpdateOptionItems();
                 });
-        ((ListView) findViewById(R.id.apps_selector_listview)).setAdapter(appsAdapter);
+        view.setAdapter(appsAdapter);
         Log.i(TAG, "setAdapter");
     }
     private void finishAdapter() {
-        appsAdapter.filter("");
-        updateProgress(1.0f);
-        appsAdapter.notifyDataSetChanged();
+        oldFraction = 0;
+        actionBar.setBackgroundDrawable(null);
+        actionBarBackground.setFraction(0);
+        actionBar.setBackgroundDrawable(actionBarBackground);
         storeLoaded = true;
-        Log.i(TAG, "finishAdapter");
+        updateProgress(1.0f);
+
+        ListView view = findViewById(R.id.apps_selector_listview);
+        view.post(() -> {
+            mutex.lock();
+            store.resumeSize();
+            appsAdapter.notifyDataSetChanged();
+            mutex.unlock();
+        });
     }
     private void updateProgress(float fraction) {
         if (fraction > oldFraction) {
@@ -87,14 +98,20 @@ public abstract class SelectorActivity extends AppCompatActivity {
             actionBarBackground.setFraction(oldFraction);
             actionBar.setBackgroundDrawable(actionBarBackground);
 
-            ((ListView) findViewById(R.id.apps_selector_listview)).post(() -> {
-                mutex.lock();
-                store.updateSize();
-                appsAdapter.notifyDataSetChanged();
-                mutex.unlock();
-            });
+            ListView view = findViewById(R.id.apps_selector_listview);
+            int screenHeight = Math.max(5, view.getLastVisiblePosition() - view.getFirstVisiblePosition());
+            if (store.realSize() < view.getLastVisiblePosition() + screenHeight || storeLoaded) {
+                view.post(() -> {
+                    if (storeLoaded)
+                        return;
+
+                    mutex.lock();
+                    store.freezeSize();
+                    appsAdapter.notifyDataSetChanged();
+                    mutex.unlock();
+                });
+            }
         }
-        Log.i(TAG, "updateProgress" + fraction);
     }
 
     private boolean COLOR_INITIALIZED = false;

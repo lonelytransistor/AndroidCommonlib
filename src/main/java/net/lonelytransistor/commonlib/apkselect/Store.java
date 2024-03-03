@@ -87,7 +87,7 @@ public abstract class Store extends Filter {
 
     private String filterString = "";
     private SortOrder sortOrder = SortOrder.NONE;
-    private int fakeSize = 0;
+    private int fakeSize = -1;
 
     private final Executor executor = Executors.newSingleThreadExecutor();
     private final PackageManager packageManager;
@@ -176,11 +176,17 @@ public abstract class Store extends Filter {
         save(pkgNames);
     }
 
-    void updateSize() {
+    void freezeSize() {
         fakeSize = filteredIndices.size();
     }
+    void resumeSize() {
+        fakeSize = -1;
+    }
+    int realSize() {
+        return filteredIndices.size();
+    }
     public int size() {
-        return fakeSize;
+        return fakeSize >= 0 ? fakeSize : realSize();
     }
     public int size(boolean s) {
         return s ? enabledIndices.size() : disabledIndices.size();
