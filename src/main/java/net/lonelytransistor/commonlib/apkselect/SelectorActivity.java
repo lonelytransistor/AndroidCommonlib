@@ -79,12 +79,12 @@ public abstract class SelectorActivity extends AppCompatActivity {
         actionBar.setBackgroundDrawable(null);
         actionBarBackground.setFraction(0);
         actionBar.setBackgroundDrawable(actionBarBackground);
-        storeLoaded = true;
         updateProgress(1.0f);
 
         ListView view = findViewById(R.id.apps_selector_listview);
         view.post(() -> {
             mutex.lock();
+            storeLoaded = true;
             store.resumeSize();
             appsAdapter.notifyDataSetChanged();
             mutex.unlock();
@@ -100,17 +100,14 @@ public abstract class SelectorActivity extends AppCompatActivity {
 
             ListView view = findViewById(R.id.apps_selector_listview);
             int screenHeight = Math.max(5, view.getLastVisiblePosition() - view.getFirstVisiblePosition());
-            if (store.realSize() < view.getLastVisiblePosition() + screenHeight || storeLoaded) {
-                view.post(() -> {
-                    if (storeLoaded)
-                        return;
-
-                    mutex.lock();
+            view.post(() -> {
+                mutex.lock();
+                if (store.realSize() < view.getLastVisiblePosition() + screenHeight && !storeLoaded) {
                     store.freezeSize();
                     appsAdapter.notifyDataSetChanged();
-                    mutex.unlock();
-                });
-            }
+                }
+                mutex.unlock();
+            });
         }
     }
 
